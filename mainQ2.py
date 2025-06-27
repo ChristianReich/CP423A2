@@ -52,33 +52,32 @@ def main():
             continue
         query_tokens = preprocess_text(query)
 
+        query_vector = pd.DataFrame(0, columns=tfidf_dfs[0].columns, index=['Binary', 'Count', 'Norm', 'Log', 'DubNorm'], dtype=float)
+        for token in query_tokens:
+            if token in tfidf_dfs[0].columns:
+                query_vector.at['Binary', token] = 1
+                query_vector.at['Count', token] += 1
+        query_vector.loc['Norm'] = query_vector.loc['Count'] / query_vector.loc['Count'].sum()
+        query_vector.loc['Log'] = np.log1p(query_vector.loc['Count'])
+        df = 0.5 + 0.5 * (query_vector.loc['Count'].div(query_vector.loc['Count'].max()))
+        query_vector.loc['DubNorm'] = 0.5 + 0.5 * (query_vector.loc['Count'].div(query_vector.loc['Count'].max()))
+        query_vector.mul(idf, axis=1)
+
         relevance = []
         for i in range(tfidf_dfs[0].shape[0]):
             scores = []
             for j in range(len(tfidf_dfs)):
-                for token in query_tokens:
-                    if token in tfidf_dfs[j].columns:
-                        k = tfidf_dfs[j].columns.get_loc(token)
-                        if token == query_tokens[0]:
-                            scores.append(tfidf_dfs[j].iloc[i,k])
-                        else:
-                            scores[j] += tfidf_dfs[j].iloc[i,k]
+                scores.append(tfidf_dfs[j].iloc[i].dot(query_vector.iloc[j]))
             relevance.append(scores)
         
         final_scores = pd.DataFrame(relevance, index=tfidf_dfs[0].index, columns=['Binary', 'Count', 'Norm', 'Log', 'DubNorm'])
-        print(final_scores.sort_values(by='Binary', ascending=False).head())
-                
         
-
-
-    # Uncomment the following lines if you want to create a final DataFrame with all TF-IDF values
-    # tfidf_final_df = pd.DataFrame(index=count_df.index, columns=count_df.columns)
-
-    # for doc in count_df.index:
-    #     for term in count_df.columns:
-    #         tfidf_final_df.at[doc, term] = [
-    #             tfidf_df.at[doc, term] for tfidf_df in tfidf_dfs
-    #         ]
+        # Print all the top 5 results for each TF-IDF type
+        print("Top 5 results for each TF-IDF type:")
+        for col in final_scores.columns:
+            print(f"\nTop 5 results for {col}:")
+            print(final_scores.sort_values(by=col, ascending=False)[col].head(5))
+        
 
     
     return
