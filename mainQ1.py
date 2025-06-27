@@ -1,6 +1,5 @@
 from preprocessing import preprocess_text, process_docs
 from index import create_index
-import os
 
 from pathlib import Path
 
@@ -38,7 +37,6 @@ def search(query, index):
             for doc_id in index[token][1].keys():
                 if doc_id in valid_docs:
                     temp_ind[token][1][doc_id] = index[token][1][doc_id]
-    print(temp_ind)
 
     intial = temp_ind[query_tokens[0]][1]
 

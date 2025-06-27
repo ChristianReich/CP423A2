@@ -23,6 +23,7 @@ def preprocess_text(p):
 
 def process_docs(path):
     processed_docs = {}
+    vocab = []
     for filename in os.listdir(path):
         print(f"Processing file: {filename[:-4]}")
         if filename.endswith('.txt'):
