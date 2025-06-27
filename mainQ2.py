@@ -37,7 +37,50 @@ def main():
     norm_df = count_df.div(count_df.sum(axis=1), axis=0)
     log_df = np.log1p(count_df)
     dubnorm_df = 0.5 + 0.5 * (count_df.div(count_df.max(axis=1), axis=0))
-    print(dubnorm_df[dubnorm_df["00"] > 0.5].head())
+
+    tf_dfs = [binary_df, count_df, norm_df, log_df, dubnorm_df]
+    total_docs = count_df.shape[0]
+    df = (count_df > 0).sum(axis=0)
+    idf = np.log(total_docs / (df + 1))
+    tfidf_dfs = [tf_df.mul(idf, axis=1) for tf_df in tf_dfs]
+
+    flag = True
+    while flag:
+        query = input("Enter a query (or 'exit' to quit): ")
+        if query.lower() == 'exit':
+            flag = False
+            continue
+        query_tokens = preprocess_text(query)
+
+        relevance = []
+        for i in range(tfidf_dfs[0].shape[0]):
+            scores = []
+            for j in range(len(tfidf_dfs)):
+                for token in query_tokens:
+                    if token in tfidf_dfs[j].columns:
+                        k = tfidf_dfs[j].columns.get_loc(token)
+                        if token == query_tokens[0]:
+                            scores.append(tfidf_dfs[j].iloc[i,k])
+                        else:
+                            scores[j] += tfidf_dfs[j].iloc[i,k]
+            relevance.append(scores)
+        
+        final_scores = pd.DataFrame(relevance, index=tfidf_dfs[0].index, columns=['Binary', 'Count', 'Norm', 'Log', 'DubNorm'])
+        print(final_scores.sort_values(by='Binary', ascending=False).head())
+                
+        
+
+
+    # Uncomment the following lines if you want to create a final DataFrame with all TF-IDF values
+    # tfidf_final_df = pd.DataFrame(index=count_df.index, columns=count_df.columns)
+
+    # for doc in count_df.index:
+    #     for term in count_df.columns:
+    #         tfidf_final_df.at[doc, term] = [
+    #             tfidf_df.at[doc, term] for tfidf_df in tfidf_dfs
+    #         ]
+
+    
     return
 
 if __name__ == "__main__":
